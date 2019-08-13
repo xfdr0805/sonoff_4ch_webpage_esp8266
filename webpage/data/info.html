@@ -21,12 +21,19 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-default" role="navigation">
-        <div class="container-fluid" style="margin-right: 50px">
+    <nav class="navbar navbar-default">
+        <div class="container">
             <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+                    aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
                 <a class="navbar-brand" href="#" style="color: darkcyan">Smart HiFi DAC</a>
             </div>
-            <div>
+            <div id="navbar" class="navbar-collapse collapse">
                 <ul class="nav navbar-nav navbar-right">
                     <li class="nav-item">
                         <a class="active" href="/info.html">Info</a>
@@ -46,7 +53,7 @@
         </div>
     </nav>
     <h3 style="text-align:center;color: dodgerblue">System Info</h3>
-    <table class="table table-bordered" style="width:600px;margin:0 auto">
+    <table class="table table-bordered" style="width:500px;margin:0 auto">
         <tbody>
             <tr>
                 <td style="width:150px;">
@@ -91,7 +98,7 @@
         </tbody>
     </table>
     <h3 style="text-align:center;color: dodgerblue">DateTime</h3>
-    <table class="table table-bordered" style="width:600px;margin:0 auto">
+    <table class="table table-bordered" style="width:500px;margin:0 auto">
         <tbody>
             <tr>
                 <td style="width:150px;">
@@ -161,7 +168,7 @@
                 console.log('获取数据失败！');
             },
         });
-    }, 1000);
+    }, 10000);
 </script>
 </body>
 
