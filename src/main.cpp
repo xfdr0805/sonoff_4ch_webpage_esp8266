@@ -2,6 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266httpUpdate.h>
 #include <FS.h>
+#include <config.h>
 #include <TimeLib.h>
 #include <NtpClientLib.h>
 #include <ESP8266httpUpdate.h>
@@ -10,30 +11,13 @@
 #include <AsyncJson.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
-#define LED_BUILD 2
-#define CONFIG_BTN 0
-#define DEBUG
-#ifdef DEBUG
-#define DEBUG_PRINT(...) Serial.printf(__VA_ARGS__)
-#else
-#define DEBUG_PRINT(...)
-#endif
-const char *ssid = "shengji3";
-const char *password = "sonavox168";
-const char *mqtt_server = "sonavox.top";
-const char *ntp_server = "ntp1.aliyun.com";
-const uint16_t mqtt_port = 1883;
+
 static WiFiEventHandler e1, e2, e3;
 boolean syncEventTriggered = false; // True if a time even has been triggered
 NTPSyncEvent_t ntpEvent;            // Last triggered event
-int8_t timeZone = 8;
-int8_t minutesTimeZone = 0;
 bool wifiFirstConnected = false;
 WiFiClient espClient;
 PubSubClient client(espClient);
-String topic_barcode = "/barcode";
-String topic_info = "/info";
-String topic_leave = "/leave";
 long lastMsg = 0;
 char msg[50];
 char buffer[128];
@@ -41,7 +25,6 @@ AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");           // access at ws://[esp ip]/ws
 AsyncEventSource events("/events"); // event source (Server-Sent events)
 String mac = "";
-
 OneButton button = OneButton(CONFIG_BTN, true, true);
 DynamicJsonBuffer jsonBuffer;
 void onSTAConnected(WiFiEventStationModeConnected ipInfo)
@@ -285,55 +268,19 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
 void setup()
 {
   Serial.begin(115200);
-
+  DEBUG_PRINT("Compiled DateTime: %s %s\n", __DATE__, __TIME__);
   pinMode(LED_BUILD, OUTPUT);
-  pinMode(16, OUTPUT);
-  pinMode(15, OUTPUT);
-  digitalWrite(16, 1);
-  digitalWrite(15, 1);
+  pinMode(RELAY1, OUTPUT);
+  pinMode(RELAY2, OUTPUT);
+  pinMode(RELAY3, OUTPUT);
+  pinMode(RELAY4, OUTPUT);
   digitalWrite(LED_BUILD, HIGH);
+  digitalWrite(RELAY1, HIGH);
+  digitalWrite(RELAY2, HIGH);
+  digitalWrite(RELAY3, HIGH);
+  digitalWrite(RELAY4, HIGH);
   button.attachClick(Short_click);
   button.attachLongPressStart(long_click);
-  WiFi.mode(WIFI_STA);
-  // WiFi.begin(ssid, password);
-  // long lastMsg = millis();
-  // while (WiFi.status() != WL_CONNECTED)
-  // {
-  //   delay(50);
-  //   DEBUG_PRINT(".");
-  //   digitalWrite(LED_BUILD, !digitalRead(LED_BUILD));
-  //   //这里如果没有网络会陷入死循环
-  //   if (millis() - lastMsg > 10000)
-  //   {
-  //     break;
-  //   }
-  // }
-  WiFi.begin();
-  e1 = WiFi.onStationModeGotIP(onSTAGotIP); // As soon WiFi is connected, start NTP Client
-  e2 = WiFi.onStationModeDisconnected(onSTADisconnected);
-  e3 = WiFi.onStationModeConnected(onSTAConnected);
-  DEBUG_PRINT("Compiled DateTime: %s %s\n", __DATE__, __TIME__);
-  mac = WiFi.macAddress();
-  //mac.replace(":", "");                //去掉：号
-  mac.toLowerCase();                   //转为小写
-  topic_barcode = mac + topic_barcode; //发布条码信息
-  topic_info = mac + topic_info;       //获取参数
-  topic_leave = mac + topic_leave;     //获取参数
-  DEBUG_PRINT("topic barcode:%s\n", topic_barcode.c_str());
-  DEBUG_PRINT("topic info:%s\n", topic_info.c_str());
-  client.setServer(mqtt_server, mqtt_port);
-  client.setCallback(callback);
-  //NTP对时
-  NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {
-    ntpEvent = event;
-    syncEventTriggered = true;
-  });
-  // NTP.begin(ntp_server, timeZone, true, minutesTimeZone);
-  // NTP.setInterval(60); //60S对一次
-
-  //irrecv.enableIRIn(); // Start the receiver
-  //https://www.jianshu.com/p/014bcae94c8b
-  //https://github.com/pellepl/spiffs/wiki/Using-spiffs
   bool ok = SPIFFS.begin();
   if (ok)
   {
@@ -374,6 +321,45 @@ void setup()
   {
     DEBUG_PRINT("Spiffs Mount Failed\r\n");
   }
+  WiFi.mode(WIFI_STA);
+  // WiFi.begin(ssid, password);
+  // long lastMsg = millis();
+  // while (WiFi.status() != WL_CONNECTED)
+  // {
+  //   delay(50);
+  //   DEBUG_PRINT(".");
+  //   digitalWrite(LED_BUILD, !digitalRead(LED_BUILD));
+  //   //这里如果没有网络会陷入死循环
+  //   if (millis() - lastMsg > 10000)
+  //   {
+  //     break;
+  //   }
+  // }
+  WiFi.begin();
+  e1 = WiFi.onStationModeGotIP(onSTAGotIP); // As soon WiFi is connected, start NTP Client
+  e2 = WiFi.onStationModeDisconnected(onSTADisconnected);
+  e3 = WiFi.onStationModeConnected(onSTAConnected);
+  mac = WiFi.macAddress();
+  //mac.replace(":", "");                //去掉：号
+  mac.toLowerCase();                   //转为小写
+  topic_barcode = mac + topic_barcode; //发布条码信息
+  topic_info = mac + topic_info;       //获取参数
+  topic_leave = mac + topic_leave;     //获取参数
+  DEBUG_PRINT("topic barcode:%s\n", topic_barcode.c_str());
+  DEBUG_PRINT("topic info:%s\n", topic_info.c_str());
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+  //NTP对时
+  NTP.onNTPSyncEvent([](NTPSyncEvent_t event) {
+    ntpEvent = event;
+    syncEventTriggered = true;
+  });
+  // NTP.begin(ntp_server, timeZone, true, minutesTimeZone);
+  // NTP.setInterval(60); //60S对一次
+
+  //irrecv.enableIRIn(); // Start the receiver
+  //https://www.jianshu.com/p/014bcae94c8b
+  //https://github.com/pellepl/spiffs/wiki/Using-spiffs
 
   //attachInterrupt(digitalPinToInterrupt(CS8422_INT_PIN), IntCallback, RISING);
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("info.html").setAuthentication("admin", "admin");
